@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:expense_tracker/resources/views/app_layout.dart';
+import 'package:expense_tracker/routes/route.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,11 +19,9 @@ class _SplashScreenState extends State<SplashScreen> {
   // Fungsi untuk timer dan navigasi
   void startTimer() {
     Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (BuildContext context) => const AppLayout(),
-        ),
-      );
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(AppRoute.appLayout);
+      }
     });
   }
 
@@ -35,15 +33,13 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const FlutterLogo(
-              size: 120,
-            ),
+            const FlutterLogo(size: 120),
             const SizedBox(height: 20),
             Text(
               "Expense Tracker",
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             const CircularProgressIndicator(),

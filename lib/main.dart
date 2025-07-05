@@ -17,10 +17,11 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme(),
       // darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.system,
-      onGenerateRoute: RouteGenerator.generatorRoute,
       debugShowCheckedModeBanner: false,
-      // 2. Ubah home menjadi SplashScreen()
-      home: const SplashScreen(),
+
+      // Gunakan initialRoute dan onGenerateRoute
+      initialRoute: AppRoute.splash,
+      onGenerateRoute: RouteGenerator.generatorRoute,
     );
   }
 }

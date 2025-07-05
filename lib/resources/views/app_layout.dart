@@ -20,14 +20,14 @@ class _AppLayoutState extends State<AppLayout> {
       page: const Homepage(),
     ),
     BottomNavItems(
-      icon: const Icon(Icons.history),
-      title: 'History',
-      page: const HistoryPage(),
-    ),
-    BottomNavItems(
       icon: const Icon(Icons.bar_chart),
       title: 'Chart',
       page: const GraphPage(),
+    ),
+    BottomNavItems(
+      icon: const Icon(Icons.history),
+      title: 'History',
+      page: const HistoryPage(),
     ),
   ];
 

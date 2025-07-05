@@ -12,6 +12,7 @@ class GraphPage extends StatelessWidget {
           style: TextStyle(color: Theme.of(context).colorScheme.primary),
         ),
         actions: [
+          // export file
           IconButton(onPressed: () {}, icon: Icon(Icons.drive_file_move_sharp)),
         ],
         foregroundColor: Theme.of(context).colorScheme.primary,
@@ -19,7 +20,7 @@ class GraphPage extends StatelessWidget {
       ),
       body: Center(
         child: Text(
-          'Welcome to the Graph Page!',
+          'Graph Page!',
           style: TextStyle(fontSize: 24, color: Colors.black54),
         ),
       ),

@@ -6,10 +6,16 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('History Page')),
+      appBar: AppBar(
+        title: const Text('History'),
+        actions: [
+          // export file
+          IconButton(onPressed: () {}, icon: Icon(Icons.drive_file_move_sharp)),
+        ],
+      ),
       body: Center(
         child: Text(
-          'Welcome to the History Page!',
+          'History Page!',
           style: TextStyle(fontSize: 24, color: Colors.black54),
         ),
       ),
