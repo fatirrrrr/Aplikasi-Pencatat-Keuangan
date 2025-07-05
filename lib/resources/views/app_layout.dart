@@ -1,6 +1,9 @@
+import 'package:expense_tracker/resources/views/graph_page.dart';
 import 'package:expense_tracker/resources/views/history_page.dart';
-import 'package:expense_tracker/resources/views/homepage.dart';
+import 'package:expense_tracker/resources/views/home_page.dart';
+import 'package:expense_tracker/resources/widget/navbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 
 class AppLayout extends StatefulWidget {
   const AppLayout({super.key});
@@ -10,32 +13,36 @@ class AppLayout extends StatefulWidget {
 }
 
 class _AppLayoutState extends State<AppLayout> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [const Homepage(), const HistoryPage()];
-
-  final List<BottomNavigationBarItem> navtems = [
-    const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-    const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+  final List<BottomNavItems> navItems = [
+    BottomNavItems(
+      icon: const Icon(Icons.home),
+      title: 'Home',
+      page: const Homepage(),
+    ),
+    BottomNavItems(
+      icon: const Icon(Icons.history),
+      title: 'History',
+      page: const HistoryPage(),
+    ),
+    BottomNavItems(
+      icon: const Icon(Icons.bar_chart),
+      title: 'Chart',
+      page: const GraphPage(),
+    ),
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: navtems,
-        backgroundColor: Colors.blue,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
-        currentIndex: _selectedIndex,
-        onTap: (value) => _onItemTapped(value),
+      body: PersistentNavbarBottom(
+        items: navItems,
+        navBarBuilder: (navBarConfig) => NeumorphicBottomNavBar(
+          navBarConfig: navBarConfig,
+          navBarDecoration: NavBarDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(15.0),
+          ),
+        ),
       ),
     );
   }

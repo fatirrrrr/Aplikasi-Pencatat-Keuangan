@@ -1,5 +1,5 @@
 import 'package:expense_tracker/resources/views/history_page.dart';
-import 'package:expense_tracker/resources/views/homepage.dart';
+import 'package:expense_tracker/resources/views/home_page.dart';
 import 'package:flutter/material.dart';
 
 class AppRoute {

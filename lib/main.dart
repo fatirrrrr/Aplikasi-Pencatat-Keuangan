@@ -1,5 +1,6 @@
+import 'package:expense_tracker/resources/views/splash_screen.dart'; // 1. Import splash screen
 import 'package:expense_tracker/routes/route.dart';
-import 'package:expense_tracker/resources/views/app_layout.dart';
+import 'package:expense_tracker/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -9,12 +10,17 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: AppLayout(),
+      title: 'Expense Tracker',
+      theme: AppTheme.lightTheme(),
+      // darkTheme: AppTheme.darkTheme(),
+      themeMode: ThemeMode.system,
       onGenerateRoute: RouteGenerator.generatorRoute,
+      debugShowCheckedModeBanner: false,
+      // 2. Ubah home menjadi SplashScreen()
+      home: const SplashScreen(),
     );
   }
 }

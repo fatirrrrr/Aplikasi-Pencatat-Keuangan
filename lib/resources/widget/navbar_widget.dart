@@ -7,11 +7,7 @@ class BottomNavItems {
   final Widget icon;
   final Widget page; // Halaman/layar yang akan ditampilkan
 
-  BottomNavItems({
-    required this.title,
-    required this.icon,
-    required this.page,
-  });
+  BottomNavItems({required this.title, required this.icon, required this.page});
 }
 
 // Widget reusable untuk Persistent Bottom Navigation Bar
@@ -25,15 +21,20 @@ class PersistentNavbarBottom extends StatelessWidget {
     required this.navBarBuilder,
   });
 
-  List<PersistentTabConfig> _tabs() {
+  List<PersistentTabConfig> _tabs(BuildContext context) {
+    // Mengakses ColorScheme dari context
+    final colorScheme = Theme.of(context).colorScheme;
+
     return items.map((item) {
       return PersistentTabConfig(
         screen: item.page,
         item: ItemConfig(
+          activeColorSecondary: colorScheme.onPrimary,
           icon: item.icon,
+          iconSize: 28,
           title: item.title,
-          activeForegroundColor: Colors.blue,
-          inactiveBackgroundColor: Colors.grey,
+          activeForegroundColor: colorScheme.onPrimary,
+          inactiveForegroundColor: colorScheme.onPrimary.withValues(alpha: 0.4),
         ),
       );
     }).toList();
@@ -41,15 +42,18 @@ class PersistentNavbarBottom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return PersistentTabView(
-      tabs: _tabs(),
+      tabs: _tabs(context),
+      backgroundColor: colorScheme.primary,
       navBarBuilder: navBarBuilder,
-      // screenTransitionAnimation: const ScreenTransitionAnimation(
-      //   animateTabTransition: true,
-      //   curve: Curves.ease,
-      //   duration: Duration(milliseconds: 200),
-      // ),
-      // stateManagement: true,
+      screenTransitionAnimation: const ScreenTransitionAnimation(
+        curve: Curves.ease,
+        duration: Duration(milliseconds: 200),
+      ),
+      stateManagement: true,
+      margin: const EdgeInsets.only(top: 10.0, bottom: 10.0),
       // hideNavigationBarWhenKeyboardShows: true,
     );
   }
