@@ -1,6 +1,7 @@
 import 'package:expense_tracker/resources/views/graph_page.dart';
 import 'package:expense_tracker/resources/views/history_page.dart';
 import 'package:expense_tracker/resources/views/home_page.dart';
+import 'package:expense_tracker/resources/views/add_data_page.dart';
 import 'package:expense_tracker/resources/widget/navbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
@@ -13,6 +14,8 @@ class AppLayout extends StatefulWidget {
 }
 
 class _AppLayoutState extends State<AppLayout> {
+  final PersistentTabController _controller = PersistentTabController();
+
   final List<BottomNavItems> navItems = [
     BottomNavItems(
       icon: const Icon(Icons.home),
@@ -45,5 +48,17 @@ class _AppLayoutState extends State<AppLayout> {
         ),
       ),
     );
+  }
+}
+
+// Wrapper untuk halaman yang tidak memerlukan navbar
+class AppLayoutWithoutNavbar extends StatelessWidget {
+  final Widget child;
+
+  const AppLayoutWithoutNavbar({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: child);
   }
 }

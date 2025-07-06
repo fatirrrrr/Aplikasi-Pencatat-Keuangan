@@ -9,14 +9,14 @@ class GraphPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Statistik Keuangan Bulanan',
-          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
         ),
         actions: [
           // export file
           IconButton(onPressed: () {}, icon: Icon(Icons.drive_file_move_sharp)),
         ],
-        foregroundColor: Theme.of(context).colorScheme.primary,
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Center(
         child: Text(

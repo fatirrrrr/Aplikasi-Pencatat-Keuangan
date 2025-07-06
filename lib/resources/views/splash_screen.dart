@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const FlutterLogo(size: 120),
+            Image.asset('assets/images/logo.png', width: 120),
             const SizedBox(height: 20),
             Text(
               "Expense Tracker",
@@ -41,8 +41,8 @@ class _SplashScreenState extends State<SplashScreen> {
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
-            const CircularProgressIndicator(),
+            // const SizedBox(height: 10),
+            // const CircularProgressIndicator(),
           ],
         ),
       ),

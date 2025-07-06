@@ -1,4 +1,3 @@
-import 'package:expense_tracker/resources/views/splash_screen.dart'; // 1. Import splash screen
 import 'package:expense_tracker/routes/route.dart';
 import 'package:expense_tracker/theme/app_theme.dart';
 import 'package:flutter/material.dart';
