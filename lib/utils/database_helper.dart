@@ -15,18 +15,21 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database ??= await _initDatabase();
     return _database!;
   }
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'finance_tracker.db');
-    return await openDatabase(path, version: 1, onCreate: _createTables);
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _createTables,
+      onOpen: (db) => _ensureDefaultCategories(db),
+    );
   }
 
   Future<void> _createTables(Database db, int version) async {
-    // Create tables
     await db.execute(TransactionsModel.Transaction.createTableQuery);
     await db.execute(Category.createTableQuery);
     await db.execute(Budget.createTableQuery);
@@ -39,29 +42,45 @@ class DatabaseHelper {
       await db.execute(query);
     }
 
-    // Insert default categories
     await _insertDefaultCategories(db);
   }
 
   Future<void> _insertDefaultCategories(Database db) async {
     for (Category category in DefaultCategories.allCategories) {
-      await db.insert('categories', category.toMapForInsert());
+      await db.insert(
+        'categories',
+        category.toMapForInsert(),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
     }
   }
 
-  // Transaction CRUD operations
-  Future<int> insertTransaction(TransactionsModel.Transaction transaction) async {
+  Future<void> _ensureDefaultCategories(Database db) async {
+    final count =
+        Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM categories'),
+        ) ??
+        0;
+
+    if (count == 0) {
+      await _insertDefaultCategories(db);
+    }
+  }
+
+  // Transaction operations
+  Future<int> insertTransaction(
+    TransactionsModel.Transaction transaction,
+  ) async {
     final db = await database;
     return await db.insert('transactions', transaction.toMapForInsert());
   }
 
   Future<List<TransactionsModel.Transaction>> getAllTransactions() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'transactions',
-      orderBy: 'date DESC',
-    );
-    return List.generate(maps.length, (i) => TransactionsModel.Transaction.fromMap(maps[i]));
+    final maps = await db.query('transactions', orderBy: 'date DESC');
+    return maps
+        .map((map) => TransactionsModel.Transaction.fromMap(map))
+        .toList();
   }
 
   Future<List<TransactionsModel.Transaction>> getTransactionsByDateRange(
@@ -69,7 +88,7 @@ class DatabaseHelper {
     DateTime endDate,
   ) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
+    final maps = await db.query(
       'transactions',
       where: 'date >= ? AND date <= ?',
       whereArgs: [
@@ -78,10 +97,14 @@ class DatabaseHelper {
       ],
       orderBy: 'date DESC',
     );
-    return List.generate(maps.length, (i) => TransactionsModel.Transaction.fromMap(maps[i]));
+    return maps
+        .map((map) => TransactionsModel.Transaction.fromMap(map))
+        .toList();
   }
 
-  Future<int> updateTransaction(TransactionsModel.Transaction transaction) async {
+  Future<int> updateTransaction(
+    TransactionsModel.Transaction transaction,
+  ) async {
     final db = await database;
     return await db.update(
       'transactions',
@@ -96,7 +119,7 @@ class DatabaseHelper {
     return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Category CRUD operations
+  // Category operations
   Future<int> insertCategory(Category category) async {
     final db = await database;
     return await db.insert('categories', category.toMapForInsert());
@@ -104,21 +127,21 @@ class DatabaseHelper {
 
   Future<List<Category>> getAllCategories() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('categories');
-    return List.generate(maps.length, (i) => Category.fromMap(maps[i]));
+    final maps = await db.query('categories');
+    return maps.map((map) => Category.fromMap(map)).toList();
   }
 
   Future<List<Category>> getCategoriesByType(TransactionType type) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
+    final maps = await db.query(
       'categories',
       where: 'type = ?',
       whereArgs: [type.name],
     );
-    return List.generate(maps.length, (i) => Category.fromMap(maps[i]));
+    return maps.map((map) => Category.fromMap(map)).toList();
   }
 
-  // Budget CRUD operations
+  // Budget operations
   Future<int> insertBudget(Budget budget) async {
     final db = await database;
     return await db.insert('budgets', budget.toMapForInsert());
@@ -126,8 +149,8 @@ class DatabaseHelper {
 
   Future<List<Budget>> getAllBudgets() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('budgets');
-    return List.generate(maps.length, (i) => Budget.fromMap(maps[i]));
+    final maps = await db.query('budgets');
+    return maps.map((map) => Budget.fromMap(map)).toList();
   }
 
   Future<int> updateBudget(Budget budget) async {
@@ -145,9 +168,9 @@ class DatabaseHelper {
     return await db.delete('budgets', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Close database
   Future<void> close() async {
     final db = await database;
     await db.close();
+    _database = null;
   }
 }

@@ -59,15 +59,17 @@ class Category {
     };
   }
 
+  // Perbaikan: Buat constraint UNIQUE untuk kombinasi name dan type
   static String get createTableQuery => '''
     CREATE TABLE categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
       icon TEXT NOT NULL,
       color TEXT NOT NULL,
       type TEXT NOT NULL,
       created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
+      updated_at INTEGER NOT NULL,
+      UNIQUE(name, type)
     )
   ''';
 
