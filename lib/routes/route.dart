@@ -11,6 +11,7 @@ class AppRoute {
   static const String history = '/history';
   static const String addData = '/add_data';
   static const String graph = '/graph';
+  static const String test = '/test';
 }
 
 class RouteGenerator {

@@ -1,5 +1,5 @@
 import 'package:expense_tracker/models/budget.dart';
-import 'package:expense_tracker/models/category.dart';
+import 'package:expense_tracker/models/category.dart' as model; // Menggunakan alias
 import 'package:expense_tracker/models/transaction_type.dart';
 import 'package:expense_tracker/models/transactions.dart' as TransactionsModel;
 import 'package:expense_tracker/utils/default_categories.dart';
@@ -31,10 +31,9 @@ class DatabaseHelper {
 
   Future<void> _createTables(Database db, int version) async {
     await db.execute(TransactionsModel.Transaction.createTableQuery);
-    await db.execute(Category.createTableQuery);
+    await db.execute(model.Category.createTableQuery); // Menggunakan alias
     await db.execute(Budget.createTableQuery);
 
-    // Create indexes
     for (String query in TransactionsModel.Transaction.createIndexQueries) {
       await db.execute(query);
     }
@@ -46,7 +45,7 @@ class DatabaseHelper {
   }
 
   Future<void> _insertDefaultCategories(Database db) async {
-    for (Category category in DefaultCategories.allCategories) {
+    for (model.Category category in DefaultCategories.allCategories) { // Menggunakan alias
       await db.insert(
         'categories',
         category.toMapForInsert(),
@@ -57,20 +56,15 @@ class DatabaseHelper {
 
   Future<void> _ensureDefaultCategories(Database db) async {
     final count =
-        Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM categories'),
-        ) ??
+        Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM categories')) ??
         0;
-
     if (count == 0) {
       await _insertDefaultCategories(db);
     }
   }
 
   // Transaction operations
-  Future<int> insertTransaction(
-    TransactionsModel.Transaction transaction,
-  ) async {
+  Future<int> insertTransaction(TransactionsModel.Transaction transaction) async {
     final db = await database;
     return await db.insert('transactions', transaction.toMapForInsert());
   }
@@ -102,9 +96,7 @@ class DatabaseHelper {
         .toList();
   }
 
-  Future<int> updateTransaction(
-    TransactionsModel.Transaction transaction,
-  ) async {
+  Future<int> updateTransaction(TransactionsModel.Transaction transaction) async {
     final db = await database;
     return await db.update(
       'transactions',
@@ -120,25 +112,25 @@ class DatabaseHelper {
   }
 
   // Category operations
-  Future<int> insertCategory(Category category) async {
+  Future<int> insertCategory(model.Category category) async { // Menggunakan alias
     final db = await database;
     return await db.insert('categories', category.toMapForInsert());
   }
 
-  Future<List<Category>> getAllCategories() async {
+  Future<List<model.Category>> getAllCategories() async { // Menggunakan alias
     final db = await database;
     final maps = await db.query('categories');
-    return maps.map((map) => Category.fromMap(map)).toList();
+    return maps.map((map) => model.Category.fromMap(map)).toList(); // Menggunakan alias
   }
 
-  Future<List<Category>> getCategoriesByType(TransactionType type) async {
+  Future<List<model.Category>> getCategoriesByType(TransactionType type) async { // Menggunakan alias
     final db = await database;
     final maps = await db.query(
       'categories',
       where: 'type = ?',
       whereArgs: [type.name],
     );
-    return maps.map((map) => Category.fromMap(map)).toList();
+    return maps.map((map) => model.Category.fromMap(map)).toList(); // Menggunakan alias
   }
 
   // Budget operations
