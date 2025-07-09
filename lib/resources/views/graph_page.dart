@@ -15,7 +15,7 @@ class GraphPage extends ConsumerWidget {
     final NumberFormat currencyFormatter = NumberFormat.decimalPattern('id_ID');
 
     return DefaultTabController(
-      length: 2, // Jumlah tab: 2
+      length: 1, // Jumlah tab: 1
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -32,7 +32,7 @@ class GraphPage extends ConsumerWidget {
             indicatorColor: Theme.of(context).colorScheme.onPrimary,
             tabs: const [
               Tab(text: 'BULANAN'),
-              Tab(text: 'KUSTOM'),
+              // Tab(text: 'KUSTOM'),
             ],
           ),
         ),
