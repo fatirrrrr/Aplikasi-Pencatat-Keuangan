@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 
-// 1. Ubah menjadi ConsumerStatefulWidget
+// Ubah menjadi ConsumerStatefulWidget
 class AppLayout extends ConsumerStatefulWidget {
   const AppLayout({super.key});
 
@@ -15,16 +15,14 @@ class AppLayout extends ConsumerStatefulWidget {
   ConsumerState<AppLayout> createState() => _AppLayoutState();
 }
 
-// 2. Ubah State menjadi ConsumerState
+//   ConsumerState
 class _AppLayoutState extends ConsumerState<AppLayout> {
-  final PersistentTabController _controller = PersistentTabController();
 
-  // 3. Tambahkan initState untuk memuat data
+  // Menambahkan initState untuk memuat data
   @override
   void initState() {
     super.initState();
     // Memuat data transaksi saat layout utama ini pertama kali dibuat
-    // Ini adalah titik paling aman dan tepat setelah splash screen
     Future.microtask(() {
       DateTime now = DateTime.now();
       // interval sehari

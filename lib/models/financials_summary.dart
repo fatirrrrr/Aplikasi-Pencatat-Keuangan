@@ -25,7 +25,9 @@ class FinancialSummary {
     DateTime endDate,
   ) {
     final filteredTransactions = transactions
-        .where((t) => t.date.isAfter(startDate) && t.date.isBefore(endDate))
+        .where((t) =>
+            (t.date.isAfter(startDate) || t.date.isAtSameMomentAs(startDate)) &&
+            (t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate)))
         .toList();
 
     double totalIncome = 0;
