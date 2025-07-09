@@ -1,37 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../utils/database_helper.dart';
+import '../../models/category.dart' as model;
+import '../../models/transaction_type.dart';
 import '../../models/transactions.dart';
-import '../../models/category.dart';
-import 'package:expense_tracker/models/transaction_type.dart';
+import '../../providers/transaction_provider.dart';
 
-class AddDataPage extends StatefulWidget {
+class AddDataPage extends ConsumerStatefulWidget {
   const AddDataPage({super.key});
 
   @override
-  State<AddDataPage> createState() => _AddDataPageState();
+  ConsumerState<AddDataPage> createState() => _AddDataPageState();
 }
 
-class _AddDataPageState extends State<AddDataPage> {
+class _AddDataPageState extends ConsumerState<AddDataPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _descController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
-  DateTime? _selectedDate;
-
-  String? _selectedType;
-  String? _selectedCategory;
-  bool _isLoading = false;
-  bool _isLoadingCategories = true;
-
-  final List<String> _types = ['Pemasukan', 'Pengeluaran'];
-  List<Category> _allCategories = [];
-  List<Category> _filteredCategories = [];
+  final _amountController = TextEditingController();
+  final _descController = TextEditingController();
+  final _dateController = TextEditingController();
+  
+  TransactionType _selectedType = TransactionType.expense;
+  model.Category? _selectedCategory;
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    _loadCategories();
+    _dateController.text = DateFormat('dd/MM/yyyy').format(_selectedDate);
   }
 
   @override
@@ -42,376 +37,131 @@ class _AddDataPageState extends State<AddDataPage> {
     super.dispose();
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final categories = await DatabaseHelper().getAllCategories();
-      setState(() {
-        _allCategories = categories;
-        _isLoadingCategories = false;
-      });
-      _filterCategories();
-    } catch (e) {
-      setState(() {
-        _isLoadingCategories = false;
-      });
-      _showErrorMessage('Error loading categories: $e');
-    }
-  }
-
-  void _filterCategories() {
-    if (_selectedType == null) {
-      setState(() {
-        _filteredCategories = [];
-      });
-      return;
-    }
-
-    final transactionType = _selectedType == 'Pemasukan'
-        ? TransactionType.income
-        : TransactionType.expense;
-
-    setState(() {
-      _filteredCategories = _allCategories
-          .where((category) => category.type == transactionType)
-          .toList();
-
-      // Reset selected category if it's not in filtered list
-      if (_selectedCategory != null &&
-          !_filteredCategories.any((cat) => cat.name == _selectedCategory)) {
-        _selectedCategory = null;
-      }
-    });
-  }
-
-  void _pickDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _dateController.text = DateFormat('dd/MM/yyyy').format(picked);
-      });
-    }
-  }
-
-  void _resetForm() {
-    _formKey.currentState?.reset();
-    _amountController.clear();
-    _descController.clear();
-    _dateController.clear();
-    setState(() {
-      _selectedType = null;
-      _selectedCategory = null;
-      _selectedDate = null;
-      _filteredCategories = [];
-    });
-  }
-
   void _saveTransaction() async {
-    // Validasi manual untuk semua field
-    if (_selectedType == null) {
-      _showErrorMessage('Pilih jenis transaksi terlebih dahulu');
+    if (!_formKey.currentState!.validate() || _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lengkapi semua data'), backgroundColor: Colors.red),
+      );
       return;
     }
-
-    if (_selectedCategory == null) {
-      _showErrorMessage('Pilih kategori terlebih dahulu');
-      return;
-    }
-
-    if (_selectedDate == null) {
-      _showErrorMessage('Pilih tanggal terlebih dahulu');
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) {
-      _showErrorMessage('Lengkapi semua input yang diperlukan');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
 
     try {
-      final title = '${_selectedCategory!} - Rp ${_amountController.text}';
       final newTransaction = Transaction(
-        id: null,
-        title: title,
-        type: _selectedType == 'Pemasukan'
-            ? TransactionType.income
-            : TransactionType.expense,
-        category: _selectedCategory!,
+        title: _descController.text.isEmpty ? _selectedCategory!.name : _descController.text,
         amount: double.parse(_amountController.text),
-        date: _selectedDate!,
+        date: _selectedDate,
+        type: _selectedType,
+        category: _selectedCategory!.name,
         description: _descController.text,
       );
-
-      await DatabaseHelper().insertTransaction(newTransaction);
+      
+      await ref.read(transactionProvider.notifier).addTransaction(newTransaction);
 
       if (mounted) {
-        _showSuccessMessage('Transaksi berhasil disimpan');
-        _resetForm();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaksi berhasil disimpan'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        _showErrorMessage('Gagal menyimpan transaksi: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red),
+        );
       }
     }
-  }
-
-  void _showSuccessMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final categoriesAsyncValue = ref.watch(categoriesProvider);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Tambah Transaksi',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Dropdown Jenis Transaksi
-              DropdownButtonFormField<String>(
-                value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Jenis Transaksi',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.sync_alt),
+      appBar: AppBar(title: const Text('Tambah Transaksi')),
+      body: categoriesAsyncValue.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Gagal memuat kategori: $err')),
+        data: (allCategories) {
+          final filteredCategories = allCategories
+              .where((cat) => cat.type == _selectedType)
+              .toList();
+          
+          return Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                DropdownButtonFormField<TransactionType>(
+                  value: _selectedType,
+                  items: const [
+                    DropdownMenuItem(value: TransactionType.expense, child: Text('Pengeluaran')),
+                    DropdownMenuItem(value: TransactionType.income, child: Text('Pemasukan')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedType = value!;
+                      _selectedCategory = null; 
+                    });
+                  },
+                  decoration: const InputDecoration(labelText: 'Jenis Transaksi', border: OutlineInputBorder()),
                 ),
-                items: _types.map((type) {
-                  return DropdownMenuItem(value: type, child: Text(type));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedType = value;
-                    _selectedCategory =
-                        null; // Reset kategori ketika jenis berubah
-                  });
-                  _filterCategories();
-                },
-                validator: (value) =>
-                    value == null ? 'Pilih jenis transaksi' : null,
-              ),
-              const SizedBox(height: 20),
-
-              // Dropdown Kategori - PERBAIKAN UTAMA
-              DropdownButtonFormField<String>(
-                key: ValueKey(
-                  'category_dropdown_$_selectedType',
-                ), // Key unik untuk rebuild
-                value: _selectedCategory,
-                decoration: InputDecoration(
-                  labelText: 'Kategori',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.local_offer),
-                  suffixIcon: _isLoadingCategories
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : null,
+                const SizedBox(height: 16),
+                
+                DropdownButtonFormField<model.Category>(
+                  value: _selectedCategory,
+                  hint: const Text('Pilih Kategori'),
+                  decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
+                  items: filteredCategories.map((cat) {
+                    return DropdownMenuItem(value: cat, child: Text(cat.name));
+                  }).toList(),
+                  onChanged: (value) => setState(() => _selectedCategory = value),
+                  validator: (value) => value == null ? 'Kategori wajib diisi' : null,
                 ),
-                items: _buildCategoryDropdownItems(),
-                onChanged: _getCategoryOnChanged(),
-                validator: (value) => value == null ? 'Pilih kategori' : null,
-                hint: _getCategoryHint(),
-                isExpanded: true, // Memastikan dropdown menggunakan lebar penuh
-              ),
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.attach_money),
-                  hintText: 'Rp 0',
+                
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _amountController,
+                  decoration: const InputDecoration(labelText: 'Jumlah', border: OutlineInputBorder(), prefixText: 'Rp '),
+                  keyboardType: TextInputType.number,
+                  validator: (value) => (value == null || value.isEmpty) ? 'Jumlah wajib diisi' : null,
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Masukkan jumlah';
-                  if (double.tryParse(value) == null) {
-                    return 'Masukkan angka yang valid';
-                  }
-                  if (double.parse(value) <= 0) {
-                    return 'Jumlah harus lebih dari 0';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: _dateController,
-                readOnly: true,
-                onTap: _pickDate,
-                decoration: InputDecoration(
-                  labelText: 'Tanggal & Waktu',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.calendar_today),
-                  hintText: 'dd/mm/yyyy',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.date_range),
-                    onPressed: _pickDate,
-                  ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _dateController,
+                  readOnly: true,
+                  decoration: const InputDecoration(labelText: 'Tanggal', border: OutlineInputBorder()),
+                  onTap: () async {
+                    final pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2101),
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        _selectedDate = pickedDate;
+                        _dateController.text = DateFormat('dd/MM/yyyy').format(pickedDate);
+                      });
+                    }
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Pilih tanggal';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: _descController,
-                minLines: 3,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Keterangan',
-                  hintText: 'Contoh: Beli pulsa, uang jajan',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                  prefixIcon: Padding(
-                    padding: EdgeInsets.only(top: 16),
-                    child: Icon(Icons.chat_bubble_outline),
-                  ),
-                  prefixIconConstraints: BoxConstraints(
-                    minWidth: 40,
-                    minHeight: 0,
-                  ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descController,
+                  decoration: const InputDecoration(labelText: 'Keterangan (Opsional)', border: OutlineInputBorder()),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _saveTransaction,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A2F55),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text(
-                    'Simpan Transaksi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-          ),
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: _saveTransaction,
+          child: const Text('Simpan Transaksi'),
         ),
       ),
     );
-  }
-
-  // Helper method untuk membangun dropdown items
-  List<DropdownMenuItem<String>>? _buildCategoryDropdownItems() {
-    if (_isLoadingCategories || _filteredCategories.isEmpty) {
-      return [];
-    }
-
-    return _filteredCategories.map((category) {
-      return DropdownMenuItem<String>(
-        value: category.name,
-        child: Row(
-          children: [
-            Text(category.icon, style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(category.name, overflow: TextOverflow.ellipsis),
-            ),
-          ],
-        ),
-      );
-    }).toList();
-  }
-
-  // Helper method untuk menentukan onChanged callback
-  ValueChanged<String?>? _getCategoryOnChanged() {
-    if (_isLoadingCategories || _filteredCategories.isEmpty) {
-      return null;
-    }
-
-    return (String? value) {
-      setState(() {
-        _selectedCategory = value;
-      });
-    };
-  }
-
-  // Helper method untuk menentukan hint text
-  Widget _getCategoryHint() {
-    if (_selectedType == null) {
-      return const Text('Pilih jenis transaksi dulu');
-    }
-    if (_isLoadingCategories) {
-      return const Text('Loading...');
-    }
-    if (_filteredCategories.isEmpty) {
-      return const Text('Tidak ada kategori tersedia');
-    }
-    return const Text('Pilih kategori');
   }
 }
