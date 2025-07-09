@@ -1,3 +1,4 @@
+import 'package:expense_tracker/utils/export_service.dart';
 import 'package:flutter/material.dart';
 import 'package:expense_tracker/models/transactions.dart';
 import 'package:expense_tracker/models/transaction_type.dart';
@@ -15,6 +16,7 @@ class _HistoryPageState extends State<HistoryPage> {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   List<Transaction> _transactions = [];
   TransactionType _selectedType = TransactionType.expense;
+  final ExportService _exportService = ExportService();
   bool _isLoading = true;
 
   @override
@@ -96,21 +98,24 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  void _exportToPDF() {
-    // TODO: Implement PDF export
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export PDF - Fitur akan segera tersedia')),
+  void exportToPDF() {
+    _exportService.exportToPDF(
+      transactions: _transactions,
+      context,
+      startDate: DateTime.now().subtract(const Duration(days: 30)),
+      endDate: DateTime.now(),
     );
   }
 
-  void _exportToExcel() {
-    // TODO: Implement Excel export
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export Excel - Fitur akan segera tersedia'),
-      ),
+  void exportToExcel() {
+    _exportService.exportToExcel(
+      transactions: _transactions,
+      context,
+      startDate: DateTime.now().subtract(const Duration(days: 30)),
+      endDate: DateTime.now(),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -121,9 +126,9 @@ class _HistoryPageState extends State<HistoryPage> {
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'pdf') {
-                _exportToPDF();
+                exportToPDF();
               } else if (value == 'excel') {
-                _exportToExcel();
+                exportToExcel();
               }
             },
             itemBuilder: (context) => [
@@ -173,9 +178,8 @@ class _HistoryPageState extends State<HistoryPage> {
                       foregroundColor: _selectedType == TransactionType.income
                           ? Theme.of(context).colorScheme.onPrimary
                           : Theme.of(context).colorScheme.onSurface,
-                      elevation: _selectedType == TransactionType.income
-                          ? 4
-                          : 0,
+                      elevation:
+                          _selectedType == TransactionType.income ? 4 : 0,
                     ),
                     child: const Text('Pemasukan'),
                   ),
@@ -195,9 +199,8 @@ class _HistoryPageState extends State<HistoryPage> {
                       foregroundColor: _selectedType == TransactionType.expense
                           ? Theme.of(context).colorScheme.onPrimary
                           : Theme.of(context).colorScheme.onSurface,
-                      elevation: _selectedType == TransactionType.expense
-                          ? 4
-                          : 0,
+                      elevation:
+                          _selectedType == TransactionType.expense ? 4 : 0,
                     ),
                     child: const Text('Pengeluaran'),
                   ),
@@ -211,118 +214,131 @@ class _HistoryPageState extends State<HistoryPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredTransactions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.receipt_long,
-                          size: 64,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Tidak ada transaksi ${_selectedType.displayName.toLowerCase()}',
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.7),
-                              ),
-                        ),
-                      ],
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _loadTransactions,
-                    child: ListView.builder(
-                      itemCount: _filteredTransactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = _filteredTransactions[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  transaction.type == TransactionType.income
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.red.withOpacity(0.1),
-                              child: Icon(
-                                transaction.type == TransactionType.income
-                                    ? Icons.arrow_downward
-                                    : Icons.arrow_upward,
-                                color:
-                                    transaction.type == TransactionType.income
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long,
+                              size: 64,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
                             ),
-                            title: Text(
-                              transaction.title,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  transaction.category,
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.7),
-                                      ),
-                                ),
-                                Text(
-                                  DateFormat(
-                                    'dd/MM/yyyy',
-                                  ).format(transaction.date),
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.5),
-                                      ),
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Rp ${NumberFormat('#,##0', 'id_ID').format(transaction.amount)}',
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(
-                                        color:
-                                            transaction.type ==
-                                                TransactionType.income
-                                            ? Colors.green
-                                            : Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tidak ada transaksi ${_selectedType.displayName.toLowerCase()}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    )
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
                                   ),
-                                  onPressed: () =>
-                                      _showDeleteConfirmation(transaction),
-                                ),
-                              ],
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadTransactions,
+                        child: ListView.builder(
+                          itemCount: _filteredTransactions.length,
+                          itemBuilder: (context, index) {
+                            final transaction = _filteredTransactions[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 4,
+                              ),
+                              color: Colors.white,
+                              elevation: 0,
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      transaction.type == TransactionType.income
+                                          ? Colors.green.withValues(alpha: 0.1)
+                                          : Colors.red.withValues(alpha: 0.1),
+                                  child: Icon(
+                                    transaction.type == TransactionType.income
+                                        ? Icons.arrow_downward
+                                        : Icons.arrow_upward,
+                                    color: transaction.type ==
+                                            TransactionType.income
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                ),
+                                title: Text(
+                                  transaction.title,
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      transaction.category,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                    Text(
+                                      DateFormat(
+                                        'dd/MM/yyyy',
+                                      ).format(transaction.date),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.5),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Rp ${NumberFormat('#,##0', 'id_ID').format(transaction.amount)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            color: transaction.type ==
+                                                    TransactionType.income
+                                                ? Colors.green
+                                                : Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () =>
+                                          _showDeleteConfirmation(transaction),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
           ),
         ],
       ),

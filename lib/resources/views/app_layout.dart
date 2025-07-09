@@ -25,9 +25,17 @@ class _AppLayoutState extends ConsumerState<AppLayout> {
     super.initState();
     // Memuat data transaksi saat layout utama ini pertama kali dibuat
     // Ini adalah titik paling aman dan tepat setelah splash screen
-    Future.microtask(
-      () => ref.read(transactionProvider.notifier).loadTransactions(),
-    );
+    Future.microtask(() {
+      DateTime now = DateTime.now();
+      // interval sehari
+      DateTime startDate = DateTime(now.year, now.month, now.day);
+      DateTime endDate =
+          DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+      ref.read(transactionProvider.notifier).loadTransactions();
+      ref
+          .read(transactionProvider.notifier)
+          .loadTransactionsByDateRange(startDate, endDate);
+    });
   }
 
   // Daftar navigasi tidak perlu diubah

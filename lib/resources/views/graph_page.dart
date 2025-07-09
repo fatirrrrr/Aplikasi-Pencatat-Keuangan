@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-import 'package:expense_tracker/providers/transaction_provider.dart'; // Lokasi provider yang kita buat
+import 'package:expense_tracker/providers/transaction_provider.dart'; // Lokasi provider
 
 // Halaman diubah menjadi ConsumerWidget untuk bisa 'mendengarkan' provider
 class GraphPage extends ConsumerWidget {
@@ -14,44 +14,19 @@ class GraphPage extends ConsumerWidget {
     // Pindahkan formatter ke sini agar bisa diakses oleh semua method
     final NumberFormat currencyFormatter = NumberFormat.decimalPattern('id_ID');
 
-    return DefaultTabController(
-      length: 2, // Jumlah tab: 2
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Statistik Keuangan',
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-          ),
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          // Menambahkan TabBar di bawah AppBar
-          bottom: TabBar(
-            labelColor: Theme.of(context).colorScheme.onPrimary,
-            unselectedLabelColor:
-                Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-            indicatorColor: Theme.of(context).colorScheme.onPrimary,
-            tabs: const [
-              Tab(text: 'BULANAN'),
-              Tab(text: 'KUSTOM'),
-            ],
-          ),
+    // Karena hanya ada satu tampilan, kita tidak lagi memerlukan TabController
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Statistik Bulanan', // Judul disesuaikan
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
         ),
-        // Menampilkan konten sesuai tab yang aktif
-        body: TabBarView(
-          children: [
-            // Konten untuk Tab "Bulanan"
-            _buildMonthlyView(context, ref, currencyFormatter),
-
-            // Konten untuk Tab "Kustom" (bisa Anda kembangkan lebih lanjut)
-            Center(
-              child: Text(
-                'Tampilan Kustom (segera hadir!)',
-                style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
-              ),
-            ),
-          ],
-        ),
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        // TabBar dihapus dari sini
       ),
+      // Body sekarang langsung menampilkan konten bulanan
+      body: _buildMonthlyView(context, ref, currencyFormatter),
     );
   }
 
@@ -94,6 +69,8 @@ class GraphPage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
+            const Icon(Icons.data_usage_outlined, size: 50, color: Colors.grey),
+            const SizedBox(height: 8),
             const Text('Tidak ada data untuk bulan ini.'),
           ],
         ),

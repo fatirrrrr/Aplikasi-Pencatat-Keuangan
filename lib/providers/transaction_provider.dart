@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// Menggunakan alias untuk menghindari konflik nama
+// Menggunakan alias untuk menghindari konflik nama dengan sqflite
 import 'package:expense_tracker/models/transactions.dart' as TransactionsModel;
 import 'package:expense_tracker/models/category.dart' as model;
 import 'package:expense_tracker/resources/views/statistic_logic.dart';
@@ -22,6 +21,16 @@ class TransactionNotifier
       debugPrint('Gagal memuat transaksi: $e');
       debugPrint('Stack trace: $stackTrace');
       state = [];
+    }
+  }
+
+  Future<void> loadTransactionsByDateRange(
+      DateTime startDate, DateTime endDate) async {
+    try {
+      state = await _dbHelper.getTransactionsByDateRange(startDate, endDate);
+    } catch (e) {
+      debugPrint('Gagal memuat transaksi: $e');
+      debugPrint('Stack Trace: $StackTrace');
     }
   }
 
