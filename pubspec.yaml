@@ -27,6 +27,7 @@ dependencies:
   excel: ^4.0.6
   path_provider: ^2.1.5
   share_plus: ^11.0.0
+  open_file: ^3.3.2
 
 dev_dependencies:
   # Diberi 2 spasi di depannya

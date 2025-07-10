@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
+import 'package:open_file/open_file.dart';
 import 'package:expense_tracker/models/transactions.dart' as TransactionsModel;
 import 'package:expense_tracker/models/financials_summary.dart';
 
@@ -15,6 +16,7 @@ class ExportService {
     required List<TransactionsModel.Transaction> transactions,
     required DateTime startDate,
     required DateTime endDate,
+    bool shouldShare = false, // Parameter baru untuk mengontrol share
   }) async {
     // Tampilkan dialog loading di awal
     showDialog(
@@ -33,7 +35,7 @@ class ExportService {
             backgroundColor: Colors.orange,
           ),
         );
-        return; // Keluar dari fungsi jika tidak ada data
+        return;
       }
 
       // 1. Buat ringkasan dan dokumen PDF
@@ -70,25 +72,30 @@ class ExportService {
         ),
       );
 
-      // 2. Simpan file
-      final output = await getTemporaryDirectory();
-      final file = File(
-          '${output.path}/laporan_keuangan_${DateTime.now().millisecondsSinceEpoch}.pdf');
+      // 2. Simpan file ke Downloads directory
+      final Directory? downloadsDirectory = await getExternalStorageDirectory();
+      final String downloadsPath = '${downloadsDirectory!.path}/Download';
+      final Directory downloadsDir = Directory(downloadsPath);
+
+      // Buat folder Download jika belum ada
+      if (!await downloadsDir.exists()) {
+        await downloadsDir.create(recursive: true);
+      }
+
+      final String fileName =
+          'laporan_keuangan_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File('$downloadsPath/$fileName');
       await file.writeAsBytes(await pdf.save());
 
-      // 3. Bagikan file
-      await Share.shareXFiles([XFile(file.path)],
-          text: 'Laporan Keuangan Anda');
+      // 3. Bagikan file hanya jika diminta
+      if (shouldShare) {
+        await Share.shareXFiles([XFile(file.path)],
+            text: 'Laporan Keuangan Anda');
+      }
 
-      // 4. Tampilkan pesan sukses
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF berhasil diekspor!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // 4. Tampilkan dialog pilihan
+      _showExportSuccessDialog(context, file.path, 'PDF', fileName);
     } catch (e) {
-      // Blok catch sekarang hanya untuk menampilkan pesan error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal mengekspor PDF: $e'),
@@ -96,8 +103,6 @@ class ExportService {
         ),
       );
     } finally {
-      // Blok ini akan selalu dijalankan, baik sukses maupun gagal.
-      // Memastikan dialog selalu ditutup dengan aman.
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
@@ -110,6 +115,7 @@ class ExportService {
     required List<TransactionsModel.Transaction> transactions,
     required DateTime startDate,
     required DateTime endDate,
+    bool shouldShare = false, // Parameter baru untuk mengontrol share
   }) async {
     // Tampilkan dialog loading di awal
     showDialog(
@@ -128,7 +134,7 @@ class ExportService {
             backgroundColor: Colors.orange,
           ),
         );
-        return; // Keluar dari fungsi jika tidak ada data
+        return;
       }
 
       // 1. Buat ringkasan dan workbook Excel
@@ -186,30 +192,35 @@ class ExportService {
             .appendRow([TextCellValue(category), DoubleCellValue(amount)]);
       });
 
-      // 2. Simpan file Excel
+      // 2. Simpan file Excel ke Downloads directory
       final fileBytes = excel.encode();
       if (fileBytes == null) {
         throw Exception("Gagal membuat file Excel.");
       }
 
-      final output = await getTemporaryDirectory();
-      final file = File(
-          '${output.path}/laporan_keuangan_${DateTime.now().millisecondsSinceEpoch}.xlsx');
+      final Directory? downloadsDirectory = await getExternalStorageDirectory();
+      final String downloadsPath = '${downloadsDirectory!.path}/Download';
+      final Directory downloadsDir = Directory(downloadsPath);
+
+      // Buat folder Download jika belum ada
+      if (!await downloadsDir.exists()) {
+        await downloadsDir.create(recursive: true);
+      }
+
+      final String fileName =
+          'laporan_keuangan_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final file = File('$downloadsPath/$fileName');
       await file.writeAsBytes(fileBytes);
 
-      // 3. Bagikan file
-      await Share.shareXFiles([XFile(file.path)],
-          text: 'Laporan Keuangan Anda');
+      // 3. Bagikan file hanya jika diminta
+      if (shouldShare) {
+        await Share.shareXFiles([XFile(file.path)],
+            text: 'Laporan Keuangan Anda');
+      }
 
-      // 4. Tampilkan pesan sukses
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Excel berhasil diekspor!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // 4. Tampilkan dialog pilihan
+      _showExportSuccessDialog(context, file.path, 'Excel', fileName);
     } catch (e) {
-      // Blok catch sekarang hanya untuk menampilkan pesan error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal mengekspor Excel: $e'),
@@ -217,12 +228,77 @@ class ExportService {
         ),
       );
     } finally {
-      // Blok ini akan selalu dijalankan, baik sukses maupun gagal.
-      // Memastikan dialog selalu ditutup dengan aman.
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
     }
+  }
+
+  // Dialog untuk pilihan setelah export berhasil
+  void _showExportSuccessDialog(
+      BuildContext context, String filePath, String fileType, String fileName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('$fileType Berhasil Disimpan'),
+          content: Text(
+              'File $fileName berhasil disimpan.\n\nApa yang ingin Anda lakukan?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Tampilkan snackbar sukses
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$fileType berhasil disimpan!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Tutup'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                try {
+                  final result = await OpenFile.open(filePath);
+                  if (result.type != ResultType.done) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content:
+                            Text('Tidak dapat membuka file: ${result.message}'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal membuka file: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Buka File'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await shareExistingFile(filePath, 'Laporan Keuangan Anda');
+              },
+              child: const Text('Share'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Fungsi terpisah untuk share file yang sudah ada
+  Future<void> shareExistingFile(String filePath, String text) async {
+    await Share.shareXFiles([XFile(filePath)], text: text);
   }
 
   // Helper methods untuk format
